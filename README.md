@@ -1,8 +1,8 @@
-# thisdb-js
+# thisdb-js-sdk
 
-[![Latest Version](https://img.shields.io/github/release/thisdb/thisdb-js.svg?style=flat-square)](https://github.com/thisdb/thisdb-js/releases)
+[![Latest Version](https://img.shields.io/github/release/thisdb/thisdb-js-sdk.svg?style=flat-square)](https://github.com/thisdb/thisdb-js-sdk/releases)
 
-Official JS library for ThisDB
+Official JS SDK for ThisDB
 
 Website and documentation: https://www.thisdb.com
 
