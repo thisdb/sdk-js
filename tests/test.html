@@ -1,0 +1,12 @@
+<html>
+<body>
+<script type="text/javascript" src="../src/thisdb.js"></script>
+<script>
+var thisDB = new ThisDB('<your-api-key>');
+
+thisDB.get('<your-bucket>', '<your-key>', function(response) {
+  alert(response);
+});
+</script>
+</body>
+</html>
