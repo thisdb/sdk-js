@@ -49,6 +49,16 @@ var ThisDB = function(apiKey, keyType) {
     this.query("POST", bucket + "/" + key, value, cb);
   };
 
+  this.increment = function(bucket, key, value, cb) {
+    cb = cb || function(){};
+    this.query("PATCH", bucket + "/" + key, value, cb);
+  };
+
+  this.delete = function(bucket, key, cb) {
+    cb = cb || function(){};
+    this.query("DELETE", bucket+ "/" + key, "", cb);
+  };
+
   this.createBucket = function(cb) {
     cb = cb || function(){};
     this.query("POST", "", "", cb);
