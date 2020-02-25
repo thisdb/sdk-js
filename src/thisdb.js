@@ -35,33 +35,33 @@ var ThisDB = function(apiKey, keyType) {
       ttl: ttl
     };
 
-    this.query("POST", "tokens", args, cb);
+    this.query("POST", "tokens", args, false, cb);
   };
 
   this.get = function(bucket, key, cb) {
     cb = cb || function(){};
 
-    this.query("GET", bucket + "/" + key, "", cb);
+    this.query("GET", bucket + "/" + key, "", false, cb);
   };
 
   this.set = function(bucket, key, value, cb) {
     cb = cb || function(){};
-    this.query("POST", bucket + "/" + key, value, cb);
+    this.query("POST", bucket + "/" + key, value, true, cb);
   };
 
   this.increment = function(bucket, key, value, cb) {
     cb = cb || function(){};
-    this.query("PATCH", bucket + "/" + key, value, cb);
+    this.query("PATCH", bucket + "/" + key, value, false, cb);
   };
 
   this.delete = function(bucket, key, cb) {
     cb = cb || function(){};
-    this.query("DELETE", bucket+ "/" + key, "", cb);
+    this.query("DELETE", bucket+ "/" + key, "", true, cb);
   };
 
   this.createBucket = function(cb) {
     cb = cb || function(){};
-    this.query("POST", "", "", cb);
+    this.query("POST", "", "", false, cb);
   };
 
   this.listBucket = function(bucket, format, cb) {
@@ -70,28 +70,28 @@ var ThisDB = function(apiKey, keyType) {
 
     var args = { format: format };
 
-    this.query("GET", bucket, args, cb);
+    this.query("GET", bucket, args, false, cb);
   };
 
   this.updateBucket = function(bucket, defaultTTL, cb) {
     cb = cb || function(){};
     var args = { default_ttl: defaultTTL };
 
-    this.query("PATCH", bucket, args, cb);
+    this.query("PATCH", bucket, args, true, cb);
   };
 
   this.deleteBucket = function(bucket, cb) {
     cb = cb || function(){};
-    this.query("DELETE", bucket, "", cb);
+    this.query("DELETE", bucket, "", true, cb);
   };
 
-  this.query = function(method, url, args, cb) {
+  this.query = function(method, url, args, returnBool, cb) {
     var anHttpRequest = new XMLHttpRequest();
     anHttpRequest.onreadystatechange = function() {
       if (anHttpRequest.readyState === 4) {
         switch(anHttpRequest.status) {
           case 200:
-            cb(anHttpRequest.responseText);
+            (returnBool) ? cb(true) : cb(anHttpRequest.responseText);
             break;
           case 404:
             throw new ResourceNotFoundError(anHttpRequest.responseText);
