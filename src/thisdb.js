@@ -1,8 +1,12 @@
-var ThisDB = function(apiKey, keyType) {
-  keyType = keyType || "Api-Key";
+var ThisDB = function(initArgs) {
+  var apiKey = initArgs.apiKey || "";
+  var token = initArgs.token || "";
+  var defaultResponseFormat = initArgs.defaultResponseFormat || 'text';
 
   var endpoint = 'https://api.thisdb.com/v1/';
-  var version = '1.0.0';
+  var version = '0.1.0';
+
+  var headerMap = {};
 
   var formatParams = function(params){
     if (params === "" || typeof params === 'undefined') {
@@ -25,121 +29,162 @@ var ThisDB = function(apiKey, keyType) {
     return str.join("&");
   };
 
-  this.createToken = function(bucket, prefix, permissions, ttl, cb) {
+  this.createToken = function(args, cb) {
     cb = cb || function(){};
 
-    var args = {
-      bucket: bucket,
-      prefix: prefix,
-      permissions: permissions,
-      ttl: ttl
+    var inputArgs = {
+      bucket: args.bucket,
+      prefix: args.prefix,
+      permissions: args.permissions,
+      ttl: args.ttl
     };
 
-    this.query("POST", "tokens", args, false, cb);
+    this.query("POST", "tokens", inputArgs, false, cb);
   };
 
-  this.get = function(bucket, key, cb) {
+  this.get = function(args, cb) {
     cb = cb || function(){};
 
-    this.query("GET", bucket + "/" + key, "", false, cb);
+    if (args.format) {
+      var inputArgs = { format: args.format };
+    } else {
+      var inputArgs = "";
+    }
+
+    this.query("GET", args.bucket + "/" + args.key, inputArgs, false, cb);
   };
 
-  this.set = function(bucket, key, value, cb) {
+  this.set = function(args, cb) {
     cb = cb || function(){};
-    this.query("POST", bucket + "/" + key, value, true, cb);
+    this.query("POST", args.bucket + "/" + args.key, args.value, true, cb);
   };
 
-  this.increment = function(bucket, key, value, cb) {
+  this.increment = function(args, cb) {
     cb = cb || function(){};
-    this.query("PATCH", bucket + "/" + key, value, false, cb);
+    this.query("PATCH", args.bucket + "/" + args.key, args.value, false, cb);
   };
 
-  this.delete = function(bucket, key, cb) {
+  this.delete = function(args, cb) {
     cb = cb || function(){};
-    this.query("DELETE", bucket+ "/" + key, "", true, cb);
+    this.query("DELETE", args.bucket + "/" + args.key, "", true, cb);
   };
 
-  this.createBucket = function(cb) {
+  this.createBucket = function(args, cb) {
     cb = cb || function(){};
-    this.query("POST", "", "", false, cb);
+
+    if (args.defaultTTL) {
+      var inputArgs = { default_ttl: args.defaultTTL };
+    } else {
+      var inputArgs = "";
+    }
+
+    this.query("POST", "", inputArgs, false, cb);
   };
 
-  this.listBucket = function(bucket, format, cb) {
+  this.listBucket = function(args, cb) {
     cb = cb || function(){};
-    format = format || 'text';
 
-    var args = { format: format };
+    if (args.format) {
+      var inputArgs = { format: args.format };
+    } else {
+      var inputArgs = "";
+    }
 
-    this.query("GET", bucket, args, false, cb);
+    this.query("GET", args.bucket, inputArgs, false, cb);
   };
 
-  this.updateBucket = function(bucket, defaultTTL, cb) {
+  this.updateBucket = function(args, cb) {
     cb = cb || function(){};
-    var args = { default_ttl: defaultTTL };
+    
+    if (args.defaultTTL) {
+      var inputArgs = { default_ttl: args.defaultTTL };
+    } else {
+      var inputArgs = "";
+    }
 
-    this.query("PATCH", bucket, args, true, cb);
+    this.query("PATCH", args.bucket, inputArgs, true, cb);
   };
 
-  this.deleteBucket = function(bucket, cb) {
+  this.deleteBucket = function(args, cb) {
     cb = cb || function(){};
-    this.query("DELETE", bucket, "", true, cb);
+    this.query("DELETE", args.bucket, "", true, cb);
   };
 
   this.query = function(method, url, args, returnBool, cb) {
     var anHttpRequest = new XMLHttpRequest();
     anHttpRequest.onreadystatechange = function() {
+      if(anHttpRequest.readyState == anHttpRequest.HEADERS_RECEIVED) {
+        var headers = anHttpRequest.getAllResponseHeaders();
+        var arr = headers.trim().split(/[\r\n]+/);
+        arr.forEach(function (line) {
+          var parts = line.split(': ');
+          var header = parts.shift();
+          var value = parts.join(': ');
+          headerMap[header] = value;
+        });
+      }
       if (anHttpRequest.readyState === 4) {
+        // If response is JSON, decode
+        if (headerMap['content-type'].includes('application/json')) {
+          var response = JSON.parse(anHttpRequest.responseText);
+        } else {
+          var response = anHttpRequest.responseText;
+        }
         switch(anHttpRequest.status) {
           case 200:
-            (returnBool) ? cb(true) : cb(anHttpRequest.responseText);
+            (returnBool) ? cb(true) : cb(response);
             break;
           case 404:
-            throw new ResourceNotFoundError(anHttpRequest.responseText);
+            throw new ResourceNotFoundError(response);
             break;
           default:
-            throw new Error(anHttpRequest.responseText);
+            throw new Error(response);
         }
       }
     }
+
     switch(method) {
       case "GET":
         var fullURL = endpoint + url + formatParams(args);
         anHttpRequest.open("GET", fullURL, true);
-        anHttpRequest.setRequestHeader("X-" + keyType, apiKey);
-        anHttpRequest.send(null);
         break;
       case "POST":
         var fullURL = endpoint + url;
         anHttpRequest.open("POST", fullURL, true);
-        anHttpRequest.setRequestHeader("X-" + keyType, apiKey);
-        if (typeof args === 'object') {
-          args = serialise(args);
-          anHttpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        }
-        anHttpRequest.send(args);
         break;
       case "PATCH":
         var fullURL = endpoint + url;
         anHttpRequest.open("PATCH", fullURL, true);
-        anHttpRequest.setRequestHeader("X-" + keyType, apiKey);
-        if (typeof args === 'object') {
-          args = serialise(args);
-          anHttpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        }
-        anHttpRequest.send(args);
         break;
       case "DELETE":
         var fullURL = endpoint + url;
         anHttpRequest.open("DELETE", fullURL, true);
-        anHttpRequest.setRequestHeader("X-" + keyType, apiKey);
-        if (typeof args === 'object') {
-          args = serialise(args);
-          anHttpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        }
-        anHttpRequest.send(args);
         break;
       default:
         // code block
+    }
+
+    if (initArgs.apiKey) {
+      anHttpRequest.setRequestHeader("X-Api-Key", apiKey);
+    } else {
+      anHttpRequest.setRequestHeader("X-Token", token);
+    }
+
+    if (defaultResponseFormat !== "text") {
+      if (defaultResponseFormat === "json") {
+        anHttpRequest.setRequestHeader("Accept", "application/json");
+      }
+    }
+
+    if (typeof args === 'object') {
+      args = serialise(args);
+      anHttpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    }
+
+    if (method === "GET") {
+      anHttpRequest.send(null);
+    } else {
+      anHttpRequest.send(args);
     }
   };
 };
