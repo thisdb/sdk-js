@@ -84,13 +84,16 @@ var ThisDB = function(initArgs) {
   this.listBucket = function(args, cb) {
     cb = cb || function(){};
 
-    if (args.format) {
-      var inputArgs = { format: args.format };
+    var bucket = args.bucket;
+    delete args.bucket;
+
+    if (!isEmpty(args)) {
+      var inputArgs = args;
     } else {
       var inputArgs = "";
     }
 
-    this.query("GET", args.bucket, inputArgs, false, cb);
+    this.query("GET", bucket, inputArgs, false, cb);
   };
 
   this.updateBucket = function(args, cb) {
@@ -188,6 +191,14 @@ var ThisDB = function(initArgs) {
     }
   };
 };
+function isEmpty(map) {
+  for(var key in map) {
+    if (map.hasOwnProperty(key)) {
+       return false;
+    }
+  }
+  return true;
+}
 function ResourceNotFoundError() {
     var temp = Error.apply(this, arguments);
     temp.name = this.name = 'ResourceNotFoundError';
