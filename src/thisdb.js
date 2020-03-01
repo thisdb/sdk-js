@@ -4,7 +4,7 @@ var ThisDB = function(initArgs) {
   var defaultResponseFormat = initArgs.defaultResponseFormat || 'text';
 
   var endpoint = 'https://api.thisdb.com/v1/';
-  var version = '0.1.0';
+  var version = '0.1.1';
 
   var headerMap = {};
 
