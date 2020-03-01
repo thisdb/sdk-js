@@ -21,5 +21,5 @@ thisDB.get({ bucket: '<your-bucket>', key: '<your-key>' }, function(response) {
 To use the SDK in the browser, simply add the following script tag to your HTML pages:
 
 ```
-<script type="text/javascript" src="https://cdn.thisdb.com/sdk/js/0.1.0/thisdb.min.js"></script>
+<script type="text/javascript" src="https://cdn.thisdb.com/sdk/js/0.1.1/thisdb.min.js"></script>
 ```
